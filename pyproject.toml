@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "a2a-mermaid-tracer"
+version = "0.1.0"
+description = "CLI tool to generate Mermaid sequence diagrams from A2A protocol traces"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Matthieu", email = "matthieu@fripp.fr" },
+]
+keywords = ["a2a", "agent2agent", "mermaid", "tracing", "visualization", "multi-agent"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "typer[all]>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[project.scripts]
+a2a-mermaid-tracer = "a2a_mermaid_tracer.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/matthieu-music/a2a-mermaid-tracer"
+Repository = "https://github.com/matthieu-music/a2a-mermaid-tracer"
+Issues = "https://github.com/matthieu-music/a2a-mermaid-tracer/issues"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

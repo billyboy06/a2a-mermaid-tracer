@@ -1,0 +1,164 @@
+[
+  {
+    "sender": "OrchestratorAgent",
+    "receiver": "MathAgent",
+    "timestamp": "2025-06-15T10:30:00.000Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-001",
+      "method": "message/send",
+      "params": {
+        "message": {
+          "messageId": "msg-001",
+          "role": "user",
+          "parts": [{"kind": "text", "text": "Compute factorial of 10"}]
+        }
+      }
+    }
+  },
+  {
+    "sender": "MathAgent",
+    "receiver": "OrchestratorAgent",
+    "timestamp": "2025-06-15T10:30:01.500Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-001",
+      "result": {
+        "id": "task-abc-123",
+        "status": {"state": "completed"},
+        "artifacts": [
+          {"parts": [{"kind": "text", "text": "3628800"}]}
+        ]
+      }
+    }
+  },
+  {
+    "sender": "OrchestratorAgent",
+    "receiver": "SearchAgent",
+    "timestamp": "2025-06-15T10:30:02.000Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-002",
+      "method": "message/send",
+      "params": {
+        "message": {
+          "messageId": "msg-002",
+          "role": "user",
+          "parts": [{"kind": "text", "text": "Search for latest AI news"}]
+        }
+      }
+    }
+  },
+  {
+    "sender": "SearchAgent",
+    "receiver": "OrchestratorAgent",
+    "timestamp": "2025-06-15T10:30:04.200Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-002",
+      "result": {
+        "id": "task-def-456",
+        "status": {"state": "completed"},
+        "artifacts": [
+          {"parts": [{"kind": "text", "text": "Found 5 articles about AI..."}]}
+        ]
+      }
+    }
+  },
+  {
+    "sender": "OrchestratorAgent",
+    "receiver": "SummaryAgent",
+    "timestamp": "2025-06-15T10:30:05.000Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-003",
+      "method": "message/send",
+      "params": {
+        "message": {
+          "messageId": "msg-003",
+          "role": "user",
+          "parts": [{"kind": "text", "text": "Summarize these articles"}]
+        }
+      }
+    }
+  },
+  {
+    "sender": "SummaryAgent",
+    "receiver": "OrchestratorAgent",
+    "timestamp": "2025-06-15T10:30:08.100Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-003",
+      "error": {
+        "code": -32000,
+        "message": "Model context window exceeded"
+      }
+    }
+  },
+  {
+    "sender": "OrchestratorAgent",
+    "receiver": "SummaryAgent",
+    "timestamp": "2025-06-15T10:30:09.000Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-004",
+      "method": "message/send",
+      "params": {
+        "message": {
+          "messageId": "msg-004",
+          "role": "user",
+          "parts": [{"kind": "text", "text": "Summarize first 2 articles only"}]
+        }
+      }
+    }
+  },
+  {
+    "sender": "SummaryAgent",
+    "receiver": "OrchestratorAgent",
+    "timestamp": "2025-06-15T10:30:11.500Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-004",
+      "result": {
+        "id": "task-ghi-789",
+        "status": {"state": "completed"},
+        "artifacts": [
+          {"parts": [{"kind": "text", "text": "Summary: Article 1 discusses... Article 2 covers..."}]}
+        ]
+      }
+    }
+  },
+  {
+    "sender": "OrchestratorAgent",
+    "receiver": "DataAgent",
+    "timestamp": "2025-06-15T10:30:12.000Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-005",
+      "method": "message/stream",
+      "params": {
+        "message": {
+          "messageId": "msg-005",
+          "role": "user",
+          "parts": [{"kind": "text", "text": "Stream stock data for AAPL"}]
+        }
+      }
+    }
+  },
+  {
+    "sender": "DataAgent",
+    "receiver": "OrchestratorAgent",
+    "timestamp": "2025-06-15T10:30:15.800Z",
+    "message": {
+      "jsonrpc": "2.0",
+      "id": "req-005",
+      "result": {
+        "id": "task-jkl-012",
+        "status": {"state": "completed"},
+        "artifacts": [
+          {"parts": [{"kind": "text", "text": "AAPL: $198.50 (+1.2%)"}]}
+        ]
+      }
+    }
+  }
+]

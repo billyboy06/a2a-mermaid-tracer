@@ -65,13 +65,13 @@ class TestMermaidBuilder:
         assert "ERROR" in diagram
 
     def test_error_arrow_direction(self):
-        """Error arrows should go from receiver back to sender (like responses)."""
+        """Error arrows should go from sender to receiver (trace has correct direction)."""
         builder = MermaidBuilder()
         trace = TraceData(
             interactions=[
                 Interaction(
-                    sender="Requester",
-                    receiver="Responder",
+                    sender="Responder",
+                    receiver="Requester",
                     method="response",
                     is_error=True,
                     error_message="fail",
@@ -80,11 +80,10 @@ class TestMermaidBuilder:
             agents={"Requester", "Responder"},
         )
         diagram = builder.render(trace)
-        # Error arrow: receiver --x sender (Responder --x Requester)
         assert "Responder --x Requester" in diagram
 
     def test_response_arrow_direction(self):
-        """Response arrows should go from receiver back to sender."""
+        """Response arrows should go from sender to receiver (trace has correct direction)."""
         builder = MermaidBuilder()
         trace = TraceData(
             interactions=[
@@ -98,18 +97,20 @@ class TestMermaidBuilder:
             agents={"AgentA", "AgentB"},
         )
         diagram = builder.render(trace)
-        assert "AgentA -->> AgentB" in diagram
+        assert "AgentB -->> AgentA" in diagram
 
     def test_title(self):
         builder = MermaidBuilder()
         diagram = builder.render(self._make_trace(), title="My Trace")
         assert "title My Trace" in diagram
 
-    def test_timestamp_notes(self):
+    def test_timestamp_notes_short_format(self):
         builder = MermaidBuilder()
         diagram = builder.render(self._make_trace())
         assert "Note right of" in diagram
-        assert "2025-06-15T10:30:00Z" in diagram
+        assert "10:30:00" in diagram
+        # Full ISO should NOT appear
+        assert "2025-06-15" not in diagram
 
     def test_no_timestamp_note_on_response(self):
         """Responses should not generate timestamp notes."""
@@ -275,6 +276,140 @@ class TestMermaidBuilderGroupByTask:
         )
         diagram = builder.render(trace)
         assert "rect" not in diagram
+
+
+class TestMermaidBuilderLabels:
+    def test_request_with_summary_uses_quoted_text(self):
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(
+                    sender="A",
+                    receiver="B",
+                    method="message/send",
+                    summary="Compute factorial of 10",
+                ),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert '"Compute factorial of 10"' in diagram
+        assert "message/send" not in diagram
+
+    def test_request_without_summary_falls_back_to_method(self):
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(sender="A", receiver="B", method="message/send"),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert "message/send" in diagram
+
+    def test_response_with_summary_uses_quoted_text(self):
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(
+                    sender="B",
+                    receiver="A",
+                    method="response",
+                    is_response=True,
+                    summary="3628800",
+                ),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert '"3628800"' in diagram
+
+    def test_response_with_status_no_summary(self):
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(
+                    sender="B",
+                    receiver="A",
+                    method="response",
+                    is_response=True,
+                    status="completed",
+                    task_id="task-abc",
+                ),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert "completed (Task: task-abc" in diagram
+
+    def test_response_without_status_shows_response(self):
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(
+                    sender="B",
+                    receiver="A",
+                    method="response",
+                    is_response=True,
+                ),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert "Response" in diagram
+
+    def test_error_label_with_colon(self):
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(
+                    sender="B",
+                    receiver="A",
+                    method="response",
+                    is_error=True,
+                    error_message="Connection refused",
+                ),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert "ERROR: Connection refused" in diagram
+
+    def test_timestamp_short_with_millis(self):
+        """Milliseconds and Z should be stripped from timestamp notes."""
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(
+                    sender="A",
+                    receiver="B",
+                    method="message/send",
+                    timestamp="2025-06-15T10:30:05.000Z",
+                ),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert "10:30:05" in diagram
+        assert "2025-06-15" not in diagram
+        assert ".000" not in diagram
+
+    def test_timestamp_without_t_kept_as_is(self):
+        """Non-ISO timestamps should pass through unchanged."""
+        builder = MermaidBuilder()
+        trace = TraceData(
+            interactions=[
+                Interaction(
+                    sender="A",
+                    receiver="B",
+                    method="message/send",
+                    timestamp="1718444400",
+                ),
+            ],
+            agents={"A", "B"},
+        )
+        diagram = builder.render(trace)
+        assert "1718444400" in diagram
 
 
 class TestSanitize:

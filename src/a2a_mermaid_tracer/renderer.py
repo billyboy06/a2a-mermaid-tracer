@@ -33,7 +33,12 @@ class MermaidBuilder:
 
         Returns:
             Mermaid sequence diagram as a string.
+
+        Raises:
+            ValueError: If trace is None.
         """
+        if trace is None:
+            raise ValueError("TraceData is required.")
         lines: list[str] = []
         lines.append("sequenceDiagram")
 
@@ -68,7 +73,8 @@ class MermaidBuilder:
 
             if interaction.timestamp and not interaction.is_response:
                 safe_sender = _sanitize(interaction.sender)
-                lines.append(f"    Note right of {safe_sender}: {interaction.timestamp}")
+                short_ts = _short_timestamp(interaction.timestamp)
+                lines.append(f"    Note right of {safe_sender}: {short_ts}")
 
     def _render_grouped(self, interactions: list[Interaction], lines: list[str]) -> None:
         """Render interactions grouped by task ID in rect blocks."""
@@ -100,7 +106,8 @@ class MermaidBuilder:
 
             if interaction.timestamp and not interaction.is_response:
                 safe_sender = _sanitize(interaction.sender)
-                lines.append(f"    Note right of {safe_sender}: {interaction.timestamp}")
+                short_ts = _short_timestamp(interaction.timestamp)
+                lines.append(f"    Note right of {safe_sender}: {short_ts}")
 
         if in_rect:
             lines.append("    end")
@@ -120,16 +127,18 @@ class MermaidBuilder:
         # Build the label
         label = self._build_label(interaction)
 
-        # Choose arrow style — errors and responses both go receiver→sender
+        # Choose arrow style — sender/receiver in trace already reflect direction
         if interaction.is_error:
-            return f"{receiver} --x {sender}: {label}"
+            return f"{sender} --x {receiver}: {label}"
         elif interaction.is_response:
-            return f"{receiver} -->> {sender}: {label}"
+            return f"{sender} -->> {receiver}: {label}"
         else:
             return f"{sender} ->> {receiver}: {label}"
 
     def _build_label(self, interaction: Interaction) -> str:
         """Build the arrow label text.
+
+        Uses summary text for requests when available, status for responses.
 
         Args:
             interaction: The interaction to label.
@@ -137,23 +146,31 @@ class MermaidBuilder:
         Returns:
             The label string.
         """
-        parts = []
-
         if interaction.is_error:
-            parts.append("ERROR")
             if interaction.error_message:
-                msg = interaction.error_message[:50]
-                parts.append(f"({msg})")
-        elif interaction.is_response:
-            parts.append("Response")
-            if interaction.task_id:
-                parts.append(f"(Task: {interaction.task_id[:8]})")
-        else:
-            parts.append(interaction.method)
-            if interaction.task_id:
-                parts.append(f"(Task: {interaction.task_id[:8]})")
+                return f"ERROR: {interaction.error_message[:50]}"
+            return "ERROR"
 
-        return " ".join(parts)
+        if interaction.is_response:
+            if interaction.summary:
+                return f'"{interaction.summary}"'
+            parts = []
+            if interaction.status:
+                parts.append(interaction.status)
+            else:
+                parts.append("Response")
+            if interaction.task_id:
+                parts.append(f"(Task: {interaction.task_id[:8]})")
+            return " ".join(parts)
+
+        # Request: prefer summary over method name
+        if interaction.summary:
+            label = f'"{interaction.summary}"'
+        else:
+            label = interaction.method
+        if interaction.task_id:
+            label += f" (Task: {interaction.task_id[:8]})"
+        return label
 
 
 def _sanitize(name: str) -> str:
@@ -166,3 +183,22 @@ def _sanitize(name: str) -> str:
         Safe identifier with only alphanumeric and underscores.
     """
     return name.replace(" ", "_").replace("-", "_").replace(".", "_")
+
+
+def _short_timestamp(ts: str) -> str:
+    """Extract the time portion from an ISO timestamp.
+
+    Args:
+        ts: ISO 8601 timestamp string (e.g. "2025-06-15T10:30:00.000Z").
+
+    Returns:
+        Time portion only (e.g. "10:30:00"), or original string if parsing fails.
+    """
+    if "T" in ts:
+        time_part = ts.split("T", 1)[1]
+        # Strip trailing Z and milliseconds for readability
+        time_part = time_part.rstrip("Z")
+        if "." in time_part:
+            time_part = time_part.split(".", 1)[0]
+        return time_part
+    return ts

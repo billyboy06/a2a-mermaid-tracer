@@ -1,8 +1,14 @@
 # A2A-Mermaid-Tracer
 
+[![CI](https://github.com/matthieu-music/a2a-mermaid-tracer/actions/workflows/ci.yml/badge.svg)](https://github.com/matthieu-music/a2a-mermaid-tracer/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 CLI tool to generate [Mermaid.js](https://mermaid.js.org/) sequence diagrams from [A2A (Agent2Agent) protocol](https://a2a-protocol.org/) communication traces.
 
 Visualize multi-agent interactions at a glance.
+
+![Example diagram](docs/example-diagram.png)
 
 ## Features
 
@@ -53,14 +59,25 @@ a2a-mermaid-tracer generate --input traces.json --strict
 ```mermaid
 sequenceDiagram
     participant OrchestratorAgent as OrchestratorAgent
-    participant MathAgent as MathAgent
-    participant SearchAgent as SearchAgent
+    participant ResearchAgent as ResearchAgent
+    participant AnalystAgent as AnalystAgent
+    participant WriterAgent as WriterAgent
 
-    OrchestratorAgent ->> MathAgent: message/send (Task: task-abc)
-    Note right of OrchestratorAgent: 2025-06-15T10:30:00Z
-    MathAgent -->> OrchestratorAgent: Response (Task: task-abc)
-    OrchestratorAgent ->> SearchAgent: message/send
-    SearchAgent --x OrchestratorAgent: ERROR (Search service unavailable)
+    OrchestratorAgent ->> ResearchAgent: "Find Q1 2025 earnings for AAPL"
+    Note right of OrchestratorAgent: 10:30:00
+    ResearchAgent -->> OrchestratorAgent: "AAPL Q1 2025: Revenue $124.3B, EPS $2.40"
+    OrchestratorAgent ->> AnalystAgent: "Analyze AAPL earnings vs Q1 2024"
+    Note right of OrchestratorAgent: 10:30:04
+    AnalystAgent --x OrchestratorAgent: ERROR: Missing Q1 2024 data for comparison
+    OrchestratorAgent ->> ResearchAgent: "Find Q1 2024 earnings for AAPL"
+    Note right of OrchestratorAgent: 10:30:09
+    ResearchAgent -->> OrchestratorAgent: "AAPL Q1 2024: Revenue $119.6B, EPS $2.18"
+    OrchestratorAgent ->> AnalystAgent: "Analyze AAPL Q1 2025 vs Q1 2024"
+    Note right of OrchestratorAgent: 10:30:12
+    AnalystAgent -->> OrchestratorAgent: "Revenue +3.9% YoY, EPS +10.1% YoY"
+    OrchestratorAgent ->> WriterAgent: "Write a brief earnings report for AAPL"
+    Note right of OrchestratorAgent: 10:30:17
+    WriterAgent -->> OrchestratorAgent: "AAPL Q1 2025 Report: Strong growth with"
 ```
 
 ## CLI Reference

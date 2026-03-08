@@ -27,7 +27,7 @@ pytest -k "test_name"                # single test
 src/a2a_mermaid_tracer/
 ├── parser.py     # TraceParser — ingests JSON/NDJSON logs into Interaction dataclasses
 ├── renderer.py   # MermaidBuilder — generates Mermaid sequence diagram syntax
-├── cli.py        # Typer CLI — generate command with --input/--output/--title
+├── cli.py        # Typer CLI — generate command with --input/--output/--title/--strict/--group-by-task
 └── __init__.py   # Public API exports
 ```
 

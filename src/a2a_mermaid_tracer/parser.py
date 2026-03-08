@@ -15,13 +15,22 @@ class Interaction:
     sender: str
     receiver: str
     method: str
-    message_id: str | None = None
     task_id: str | None = None
     timestamp: str | None = None
     is_error: bool = False
     error_message: str | None = None
     is_response: bool = False
-    note: str | None = None
+    summary: str | None = None
+    status: str | None = None
+
+    def __post_init__(self) -> None:
+        """Validate required fields at construction time."""
+        if not self.sender:
+            raise ValueError("Interaction sender is required.")
+        if not self.receiver:
+            raise ValueError("Interaction receiver is required.")
+        if not self.method:
+            raise ValueError("Interaction method is required.")
 
 
 @dataclass
@@ -86,7 +95,11 @@ class TraceParser:
             ValueError: If the file is empty or contains invalid JSON.
             FileNotFoundError: If the file does not exist.
         """
+        if not path:
+            raise ValueError("File path is required.")
         path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"Trace file not found: {path}")
         content = path.read_text(encoding="utf-8").strip()
         if not content:
             raise ValueError(f"Trace file is empty: {path}")
@@ -228,7 +241,6 @@ class TraceParser:
 
         # Determine if this is a request or response
         method = message.get("method")
-        msg_id = str(message.get("id", "")) if message.get("id") is not None else None
         is_response = method is None and ("result" in message or "error" in message)
         is_error = "error" in message
 
@@ -254,23 +266,86 @@ class TraceParser:
             err = message.get("error", {})
             error_message = err.get("message", str(err))
 
+        # Extract summary from message parts (text content for requests)
+        summary = _extract_summary(params)
+
+        # Extract status and result summary from response
+        status = None
+        if is_response and not is_error:
+            result = message.get("result", {})
+            if isinstance(result, dict):
+                status_obj = result.get("status", {})
+                if isinstance(status_obj, dict):
+                    status = status_obj.get("state")
+                # Extract result summary from artifacts
+                if not summary:
+                    summary = _extract_artifact_summary(result)
+
         if is_response:
             method = "response"
-
-        # Build note for timestamp-based duration annotations
-        note = None
-        if timestamp:
-            note = f"at {timestamp}"
 
         return Interaction(
             sender=sender,
             receiver=receiver,
             method=method or "unknown",
-            message_id=msg_id,
             task_id=task_id,
             timestamp=timestamp,
             is_error=is_error,
             error_message=error_message,
             is_response=is_response,
-            note=note,
+            summary=summary,
+            status=status,
         )
+
+
+def _extract_summary(params: dict) -> str | None:
+    """Extract a text summary from message params.
+
+    Looks for text content in A2A message parts.
+
+    Args:
+        params: The params dict from a JSON-RPC message.
+
+    Returns:
+        First text part content (truncated to 40 chars), or None.
+    """
+    if not isinstance(params, dict):
+        return None
+    inner_msg = params.get("message", {})
+    if not isinstance(inner_msg, dict):
+        return None
+    parts = inner_msg.get("parts", [])
+    if not isinstance(parts, list):
+        return None
+    for part in parts:
+        if isinstance(part, dict) and part.get("kind") == "text":
+            text = part.get("text", "")
+            if text:
+                return text[:40]
+    return None
+
+
+def _extract_artifact_summary(result: dict) -> str | None:
+    """Extract a text summary from response artifacts.
+
+    Args:
+        result: The result dict from a JSON-RPC response.
+
+    Returns:
+        First artifact text content (truncated to 40 chars), or None.
+    """
+    artifacts = result.get("artifacts", [])
+    if not isinstance(artifacts, list):
+        return None
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            continue
+        parts = artifact.get("parts", [])
+        if not isinstance(parts, list):
+            continue
+        for part in parts:
+            if isinstance(part, dict) and part.get("kind") == "text":
+                text = part.get("text", "")
+                if text:
+                    return text[:40]
+    return None

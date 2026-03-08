@@ -1,7 +1,7 @@
 [
   {
     "sender": "OrchestratorAgent",
-    "receiver": "MathAgent",
+    "receiver": "ResearchAgent",
     "timestamp": "2025-06-15T10:30:00.000Z",
     "message": {
       "jsonrpc": "2.0",
@@ -11,31 +11,31 @@
         "message": {
           "messageId": "msg-001",
           "role": "user",
-          "parts": [{"kind": "text", "text": "Compute factorial of 10"}]
+          "parts": [{"kind": "text", "text": "Find Q1 2025 earnings for AAPL"}]
         }
       }
     }
   },
   {
-    "sender": "MathAgent",
+    "sender": "ResearchAgent",
     "receiver": "OrchestratorAgent",
-    "timestamp": "2025-06-15T10:30:01.500Z",
+    "timestamp": "2025-06-15T10:30:03.200Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-001",
       "result": {
-        "id": "task-abc-123",
+        "id": "task-res-001",
         "status": {"state": "completed"},
         "artifacts": [
-          {"parts": [{"kind": "text", "text": "3628800"}]}
+          {"parts": [{"kind": "text", "text": "AAPL Q1 2025: Revenue $124.3B, EPS $2.40"}]}
         ]
       }
     }
   },
   {
     "sender": "OrchestratorAgent",
-    "receiver": "SearchAgent",
-    "timestamp": "2025-06-15T10:30:02.000Z",
+    "receiver": "AnalystAgent",
+    "timestamp": "2025-06-15T10:30:04.000Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-002",
@@ -44,31 +44,28 @@
         "message": {
           "messageId": "msg-002",
           "role": "user",
-          "parts": [{"kind": "text", "text": "Search for latest AI news"}]
+          "parts": [{"kind": "text", "text": "Analyze AAPL earnings vs Q1 2024"}]
         }
       }
     }
   },
   {
-    "sender": "SearchAgent",
+    "sender": "AnalystAgent",
     "receiver": "OrchestratorAgent",
-    "timestamp": "2025-06-15T10:30:04.200Z",
+    "timestamp": "2025-06-15T10:30:08.500Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-002",
-      "result": {
-        "id": "task-def-456",
-        "status": {"state": "completed"},
-        "artifacts": [
-          {"parts": [{"kind": "text", "text": "Found 5 articles about AI..."}]}
-        ]
+      "error": {
+        "code": -32000,
+        "message": "Missing Q1 2024 data for comparison"
       }
     }
   },
   {
     "sender": "OrchestratorAgent",
-    "receiver": "SummaryAgent",
-    "timestamp": "2025-06-15T10:30:05.000Z",
+    "receiver": "ResearchAgent",
+    "timestamp": "2025-06-15T10:30:09.000Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-003",
@@ -77,28 +74,31 @@
         "message": {
           "messageId": "msg-003",
           "role": "user",
-          "parts": [{"kind": "text", "text": "Summarize these articles"}]
+          "parts": [{"kind": "text", "text": "Find Q1 2024 earnings for AAPL"}]
         }
       }
     }
   },
   {
-    "sender": "SummaryAgent",
+    "sender": "ResearchAgent",
     "receiver": "OrchestratorAgent",
-    "timestamp": "2025-06-15T10:30:08.100Z",
+    "timestamp": "2025-06-15T10:30:11.800Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-003",
-      "error": {
-        "code": -32000,
-        "message": "Model context window exceeded"
+      "result": {
+        "id": "task-res-002",
+        "status": {"state": "completed"},
+        "artifacts": [
+          {"parts": [{"kind": "text", "text": "AAPL Q1 2024: Revenue $119.6B, EPS $2.18"}]}
+        ]
       }
     }
   },
   {
     "sender": "OrchestratorAgent",
-    "receiver": "SummaryAgent",
-    "timestamp": "2025-06-15T10:30:09.000Z",
+    "receiver": "AnalystAgent",
+    "timestamp": "2025-06-15T10:30:12.000Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-004",
@@ -107,31 +107,31 @@
         "message": {
           "messageId": "msg-004",
           "role": "user",
-          "parts": [{"kind": "text", "text": "Summarize first 2 articles only"}]
+          "parts": [{"kind": "text", "text": "Analyze AAPL Q1 2025 vs Q1 2024"}]
         }
       }
     }
   },
   {
-    "sender": "SummaryAgent",
+    "sender": "AnalystAgent",
     "receiver": "OrchestratorAgent",
-    "timestamp": "2025-06-15T10:30:11.500Z",
+    "timestamp": "2025-06-15T10:30:16.300Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-004",
       "result": {
-        "id": "task-ghi-789",
+        "id": "task-ana-001",
         "status": {"state": "completed"},
         "artifacts": [
-          {"parts": [{"kind": "text", "text": "Summary: Article 1 discusses... Article 2 covers..."}]}
+          {"parts": [{"kind": "text", "text": "Revenue +3.9% YoY, EPS +10.1% YoY"}]}
         ]
       }
     }
   },
   {
     "sender": "OrchestratorAgent",
-    "receiver": "DataAgent",
-    "timestamp": "2025-06-15T10:30:12.000Z",
+    "receiver": "WriterAgent",
+    "timestamp": "2025-06-15T10:30:17.000Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-005",
@@ -140,23 +140,23 @@
         "message": {
           "messageId": "msg-005",
           "role": "user",
-          "parts": [{"kind": "text", "text": "Stream stock data for AAPL"}]
+          "parts": [{"kind": "text", "text": "Write a brief earnings report for AAPL"}]
         }
       }
     }
   },
   {
-    "sender": "DataAgent",
+    "sender": "WriterAgent",
     "receiver": "OrchestratorAgent",
-    "timestamp": "2025-06-15T10:30:15.800Z",
+    "timestamp": "2025-06-15T10:30:22.100Z",
     "message": {
       "jsonrpc": "2.0",
       "id": "req-005",
       "result": {
-        "id": "task-jkl-012",
+        "id": "task-wrt-001",
         "status": {"state": "completed"},
         "artifacts": [
-          {"parts": [{"kind": "text", "text": "AAPL: $198.50 (+1.2%)"}]}
+          {"parts": [{"kind": "text", "text": "AAPL Q1 2025 Report: Strong growth with"}]}
         ]
       }
     }

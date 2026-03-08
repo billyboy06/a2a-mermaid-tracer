@@ -14,7 +14,7 @@
 - PEP 561 `py.typed` marker
 
 ### Fixed
-- Error arrows now point from responder back to requester (same direction as response arrows)
+- Response and error arrows now follow trace direction (sender→receiver) instead of being swapped
 - Parser no longer silently uses the entire entry dict when `message` field is missing
 
 ## [0.1.0] - 2026-03-07

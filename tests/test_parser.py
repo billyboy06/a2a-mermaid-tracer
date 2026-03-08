@@ -266,7 +266,7 @@ class TestTraceParserEdgeCases:
         trace = parser.parse_string(json.dumps(entries))
         assert trace.interactions[0].task_id == "task-direct-123"
 
-    def test_no_timestamp_produces_no_note(self):
+    def test_no_timestamp_produces_none(self):
         entries = [
             {
                 "sender": "A",
@@ -281,8 +281,97 @@ class TestTraceParserEdgeCases:
         ]
         parser = TraceParser()
         trace = parser.parse_string(json.dumps(entries))
-        assert trace.interactions[0].note is None
         assert trace.interactions[0].timestamp is None
+
+
+class TestTraceParserSummaryAndStatus:
+    def test_summary_extracted_from_text_parts(self):
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(SAMPLE_TRACES))
+        req = trace.interactions[0]
+        assert req.summary == "Compute factorial of 10"
+
+    def test_summary_truncated_at_40_chars(self):
+        entries = [
+            {
+                "sender": "A",
+                "receiver": "B",
+                "message": {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "method": "message/send",
+                    "params": {
+                        "message": {
+                            "parts": [{"kind": "text", "text": "A" * 60}],
+                        }
+                    },
+                },
+            }
+        ]
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(entries))
+        assert len(trace.interactions[0].summary) == 40
+
+    def test_summary_none_when_no_parts(self):
+        entries = [
+            {
+                "sender": "A",
+                "receiver": "B",
+                "message": {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "method": "message/send",
+                    "params": {},
+                },
+            }
+        ]
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(entries))
+        assert trace.interactions[0].summary is None
+
+    def test_status_extracted_from_response(self):
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(SAMPLE_TRACES))
+        resp = trace.interactions[1]
+        assert resp.status == "completed"
+
+    def test_status_none_on_request(self):
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(SAMPLE_TRACES))
+        req = trace.interactions[0]
+        assert req.status is None
+
+    def test_status_none_on_error(self):
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(SAMPLE_TRACES))
+        err = trace.interactions[3]
+        assert err.status is None
+
+    def test_artifact_summary_extracted_from_response(self):
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(SAMPLE_TRACES))
+        resp = trace.interactions[1]
+        assert resp.summary == "3628800"
+
+    def test_artifact_summary_truncated_at_40_chars(self):
+        entries = [
+            {
+                "sender": "B",
+                "receiver": "A",
+                "message": {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "result": {
+                        "id": "task-1",
+                        "status": {"state": "completed"},
+                        "artifacts": [{"parts": [{"kind": "text", "text": "X" * 60}]}],
+                    },
+                },
+            }
+        ]
+        parser = TraceParser()
+        trace = parser.parse_string(json.dumps(entries))
+        assert len(trace.interactions[0].summary) == 40
 
 
 class TestTraceParserStrict:

@@ -22,9 +22,7 @@ def generate(
         ...,
         "--input",
         "-i",
-        help="Path to the trace file (JSON array or NDJSON format)",
-        exists=True,
-        readable=True,
+        help="Path to the trace file (JSON array or NDJSON). Use '-' for stdin.",
     ),
     output: Path = typer.Option(
         None,
@@ -38,16 +36,37 @@ def generate(
         "-t",
         help="Optional title for the diagram",
     ),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Fail on malformed entries instead of skipping them",
+    ),
+    group_by_task: bool = typer.Option(
+        False,
+        "--group-by-task",
+        help="Group interactions by task ID in rect blocks",
+    ),
 ) -> None:
     """Parse A2A traces and generate a Mermaid sequence diagram."""
-    parser = TraceParser()
-    trace = parser.parse_file(input)
+    parser = TraceParser(strict=strict)
+
+    try:
+        if str(input) == "-":
+            trace = parser.parse_stdin()
+        else:
+            if not input.exists():
+                typer.echo(f"File not found: {input}", err=True)
+                raise typer.Exit(code=1)
+            trace = parser.parse_file(input)
+    except ValueError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1)
 
     if not trace.interactions:
         typer.echo("No interactions found in the trace file.", err=True)
         raise typer.Exit(code=1)
 
-    builder = MermaidBuilder()
+    builder = MermaidBuilder(group_by_task=group_by_task)
     diagram = builder.render(trace, title=title)
 
     if output:

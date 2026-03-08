@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -64,33 +65,130 @@ class TraceParser:
     }
     """
 
+    def __init__(self, *, strict: bool = False) -> None:
+        """Initialize the parser.
+
+        Args:
+            strict: If True, raise on malformed entries instead of skipping them.
+        """
+        self._strict = strict
+
     def parse_file(self, path: str | Path) -> TraceData:
-        """Parse a trace file (JSON array or NDJSON)."""
+        """Parse a trace file (JSON array or NDJSON).
+
+        Args:
+            path: Path to the trace file.
+
+        Returns:
+            Parsed trace data.
+
+        Raises:
+            ValueError: If the file is empty or contains invalid JSON.
+            FileNotFoundError: If the file does not exist.
+        """
         path = Path(path)
         content = path.read_text(encoding="utf-8").strip()
+        if not content:
+            raise ValueError(f"Trace file is empty: {path}")
+        return self._parse_content(content)
 
-        if content.startswith("["):
-            entries = json.loads(content)
-        else:
-            entries = [json.loads(line) for line in content.splitlines() if line.strip()]
+    def parse_stdin(self) -> TraceData:
+        """Parse trace data from stdin.
 
-        return self._parse_entries(entries)
+        Returns:
+            Parsed trace data.
+
+        Raises:
+            ValueError: If stdin is empty or contains invalid JSON.
+        """
+        content = sys.stdin.read().strip()
+        if not content:
+            raise ValueError("No data received from stdin.")
+        return self._parse_content(content)
 
     def parse_string(self, data: str) -> TraceData:
-        """Parse trace data from a string."""
+        """Parse trace data from a string.
+
+        Args:
+            data: JSON array or NDJSON string.
+
+        Returns:
+            Parsed trace data.
+
+        Raises:
+            ValueError: If the string is empty or contains invalid JSON.
+        """
         data = data.strip()
-        if data.startswith("["):
-            entries = json.loads(data)
+        if not data:
+            raise ValueError("Trace data is empty.")
+        return self._parse_content(data)
+
+    def _parse_content(self, content: str) -> TraceData:
+        """Parse content string detecting format automatically.
+
+        Args:
+            content: Non-empty, stripped content string.
+
+        Returns:
+            Parsed trace data.
+
+        Raises:
+            ValueError: If the content is not valid JSON or NDJSON.
+        """
+        if content.startswith("["):
+            try:
+                entries = json.loads(content)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON array: {e}") from e
+            if not isinstance(entries, list):
+                raise ValueError("Expected a JSON array of trace entries.")
+        elif content.startswith("{"):
+            # NDJSON: one JSON object per line
+            entries = []
+            for i, line in enumerate(content.splitlines(), 1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError as e:
+                    if self._strict:
+                        raise ValueError(f"Invalid JSON on line {i}: {e}") from e
+                    continue
+                if not isinstance(obj, dict):
+                    if self._strict:
+                        raise ValueError(
+                            f"Expected JSON object on line {i}, got {type(obj).__name__}"
+                        )
+                    continue
+                entries.append(obj)
         else:
-            entries = [json.loads(line) for line in data.splitlines() if line.strip()]
+            raise ValueError(
+                "Invalid trace format: expected JSON array (starting with '[') "
+                "or NDJSON (starting with '{')."
+            )
+
         return self._parse_entries(entries)
 
     def _parse_entries(self, entries: list[dict]) -> TraceData:
-        """Convert raw log entries into TraceData."""
+        """Convert raw log entries into TraceData.
+
+        Args:
+            entries: List of raw JSON-RPC trace entry dicts.
+
+        Returns:
+            Parsed trace data.
+        """
         trace = TraceData()
 
-        for entry in entries:
-            interaction = self._parse_entry(entry)
+        for i, entry in enumerate(entries):
+            try:
+                interaction = self._parse_entry(entry)
+            except (KeyError, TypeError) as e:
+                if self._strict:
+                    raise ValueError(f"Malformed entry at index {i}: {e}") from e
+                continue
+
             if interaction:
                 trace.interactions.append(interaction)
                 trace.agents.add(interaction.sender)
@@ -99,11 +197,34 @@ class TraceParser:
         return trace
 
     def _parse_entry(self, entry: dict) -> Interaction | None:
-        """Parse a single log entry into an Interaction."""
-        sender = entry.get("sender", "Unknown")
-        receiver = entry.get("receiver", "Unknown")
+        """Parse a single log entry into an Interaction.
+
+        Args:
+            entry: A single trace entry dict with sender/receiver/message fields.
+
+        Returns:
+            Parsed interaction, or None if the entry cannot be parsed in non-strict mode.
+
+        Raises:
+            ValueError: In strict mode, if required fields are missing.
+        """
+        sender = entry.get("sender")
+        receiver = entry.get("receiver")
+
+        if not sender or not receiver:
+            if self._strict:
+                raise ValueError(
+                    f"Entry missing required 'sender' or 'receiver' field: {entry!r:.200}"
+                )
+            return None
+
         timestamp = entry.get("timestamp")
-        message = entry.get("message", entry)
+        message = entry.get("message")
+
+        if not isinstance(message, dict):
+            if self._strict:
+                raise ValueError(f"Entry missing 'message' dict: {entry!r:.200}")
+            return None
 
         # Determine if this is a request or response
         method = message.get("method")

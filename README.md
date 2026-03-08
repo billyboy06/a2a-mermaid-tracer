@@ -1,6 +1,7 @@
 # A2A-Mermaid-Tracer
 
 [![CI](https://github.com/matthieu-music/a2a-mermaid-tracer/actions/workflows/ci.yml/badge.svg)](https://github.com/matthieu-music/a2a-mermaid-tracer/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/a2a-mermaid-tracer)](https://pypi.org/project/a2a-mermaid-tracer/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
